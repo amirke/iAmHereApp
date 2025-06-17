@@ -2,5 +2,8 @@
   "arrived_button": "I Arrived",
   "sent": "Sent!",
   "where": "Where Are You",
-  "settings": "Settings"
+  "settings": "Settings",
+  "Home": "Home",
+  "My Profile": "My Profile",
+  "Logout": "Logout"
 }
