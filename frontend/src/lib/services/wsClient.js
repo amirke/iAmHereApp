@@ -1,7 +1,11 @@
+import { getWebSocketUrl } from '../config.js';
+
 let socket;
 
 export function connectWebSocket(userId) {
-  socket = new WebSocket(`wss://your-server/ws?user=${userId}`);
+  const wsUrl = getWebSocketUrl();
+  socket = new WebSocket(`${wsUrl}/ws?user=${userId}`);
+  
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.type === 'location_request') {

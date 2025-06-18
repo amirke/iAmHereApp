@@ -16,7 +16,12 @@
   },
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "generate-ssl": "node generate-ssl.js",
+    "monitor": "node monitor.js",
+    "logs": "node view-logs.js",
+    "test-health": "node test-health.js",
+    "test-connection": "node test-connection.js"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

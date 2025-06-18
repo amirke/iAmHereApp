@@ -8,6 +8,7 @@
     import { browser } from '$app/environment';
     import { userToken } from '$lib/stores';
     import { goto } from '$app/navigation';
+    import { BACKEND_URL, DEFAULT_HEADERS } from '$lib/config.js';
   
     let username = '';
     let password = '';
@@ -49,9 +50,9 @@
     async function submitForm() {
       const endpoint = isRegister ? '/api/register' : '/api/login';
   
-      const res = await fetch(`http://192.168.1.17:3001${endpoint}`, {
+      const res = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: DEFAULT_HEADERS,
         body: JSON.stringify({ username, password, language })
       });
   
