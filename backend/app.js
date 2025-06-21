@@ -7,12 +7,158 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
+const net = require('net');
 
 const { PORT, HOST, BACKEND_NAME, HTTPS } = require('./config');
+const { getFrontendUrls, getServerUrl } = require('./constants');
 const apiRoutes = require('./routes/api');
 const userRoutes = require('./routes/user');
 const websocketHandler = require('./routes/websocket');
 const logger = require('./utils/logger');
+
+// Function to check if port is available
+function checkPortAvailable(port, host = '0.0.0.0') {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    
+    server.listen(port, host, () => {
+      server.once('close', () => {
+        resolve(true);
+      });
+      server.close();
+    });
+    
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+// Function to find and kill process using port
+async function findAndKillProcessOnPort(port) {
+  const { execSync } = require('child_process');
+  try {
+    // Use netstat to find the process using the port
+    const netstatCmd = `sudo netstat -tlnp | grep :${port}`;
+    const result = execSync(netstatCmd, { encoding: 'utf8' });
+    
+    if (result.trim()) {
+      // Parse the netstat output to extract PID
+      // Format: tcp        0      0 0.0.0.0:3001            0.0.0.0:*               LISTEN      17763/node
+      const lines = result.trim().split('\n');
+      const pidsKilled = [];
+      
+      for (const line of lines) {
+        const match = line.match(/LISTEN\s+(\d+)\//);
+        if (match) {
+          const pid = match[1];
+          logger.info('Found process using port', {
+            port: port,
+            pid: pid,
+            processLine: line.trim()
+          });
+          
+          // Kill the process
+          try {
+            execSync(`sudo kill -9 ${pid}`, { encoding: 'utf8' });
+            pidsKilled.push(pid);
+            logger.success('Successfully killed process', {
+              port: port,
+              pid: pid
+            });
+          } catch (killError) {
+            logger.error('Failed to kill process', {
+              port: port,
+              pid: pid,
+              error: killError.message
+            });
+            throw killError;
+          }
+        }
+      }
+      
+      if (pidsKilled.length > 0) {
+        // Wait a moment for processes to fully terminate
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        logger.info('Port cleanup completed', {
+          port: port,
+          killedProcesses: pidsKilled
+        });
+      }
+      
+      return pidsKilled;
+    } else {
+      logger.info('No process found using port', { port: port });
+      return [];
+    }
+  } catch (error) {
+    if (error.message.includes('Command failed')) {
+      // netstat found nothing, which is good
+      logger.info('No process found using port', { port: port });
+      return [];
+    }
+    logger.error('Error checking/killing process on port', {
+      port: port,
+      error: error.message
+    });
+    throw error;
+  }
+}
+
+// Check port availability and clean up if needed
+async function checkPortBeforeStart() {
+  logger.info('Checking port availability', { port: PORT, host: HOST });
+  
+  const isAvailable = await checkPortAvailable(PORT, HOST);
+  
+  if (!isAvailable) {
+    logger.warning('Port is in use, attempting to clean up', {
+      port: PORT,
+      host: HOST
+    });
+    
+    try {
+      // Find and kill processes using the port
+      const killedPids = await findAndKillProcessOnPort(PORT);
+      
+      if (killedPids.length > 0) {
+        // Check if port is now available
+        const isNowAvailable = await checkPortAvailable(PORT, HOST);
+        if (isNowAvailable) {
+          logger.success('Port is now available after cleanup', {
+            port: PORT,
+            killedProcesses: killedPids
+          });
+        } else {
+          logger.error('Port still not available after cleanup', {
+            port: PORT,
+            killedProcesses: killedPids
+          });
+          process.exit(1);
+        }
+      } else {
+        logger.error('Port is in use but no process found to kill', {
+          port: PORT,
+          suggestion: 'Another service may be using this port'
+        });
+        process.exit(1);
+      }
+    } catch (error) {
+      logger.fatal('Failed to clean up port', {
+        port: PORT,
+        error: error.message,
+        suggestion: 'You may need to manually kill the process or change the port'
+      });
+      process.exit(1);
+    }
+  } else {
+    logger.success('Port is available', { port: PORT, host: HOST });
+  }
+}
 
 // Process monitoring with file logging
 process.on('uncaughtException', (error) => {
@@ -53,8 +199,9 @@ const app = express();
 let server;
 if (HTTPS && HTTPS.enabled) {
   try {
-    const keyPath = path.join(__dirname, HTTPS.key);
-    const certPath = path.join(__dirname, HTTPS.cert);
+    // Always use the absolute paths from config
+    const keyPath = HTTPS.key;
+    const certPath = HTTPS.cert;
     
     logger.info('Loading SSL certificates', {
       keyPath: keyPath,
@@ -120,6 +267,17 @@ server.on('error', (error) => {
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
+  const userAgent = req.get('User-Agent');
+  const origin = req.get('Origin');
+  
+  // Log incoming connections
+  logger.info('Incoming connection', {
+    origin: origin || 'Direct',
+    userAgent: userAgent,
+    ip: req.ip || req.connection.remoteAddress,
+    path: req.path,
+    method: req.method
+  });
   
   res.on('finish', () => {
     const duration = Date.now() - start;
@@ -129,7 +287,7 @@ app.use((req, res, next) => {
       res.statusCode, 
       duration, 
       req.ip || req.connection.remoteAddress,
-      req.get('User-Agent')
+      userAgent
     );
   });
   
@@ -139,17 +297,9 @@ app.use((req, res, next) => {
 // ✅ MIDDLEWARE — MUST COME FIRST
 app.use(cors({
   origin: [
-    'http://localhost:5173',
-    'http://localhost:4173',
-    'http://192.168.1.17:5173',
-    'http://192.168.1.17:4173',
-    'https://192.168.1.17:5173',
-    'https://192.168.1.17:4173',
-    // Add your global domain here
-    'https://iamhere.duckdns.org',
-    'https://iamhere.yourdomain.com',
-    // Allow all origins for development (remove in production)
-    '*'
+    ...getFrontendUrls(true), // Get all frontend URLs with HTTPS
+    getServerUrl(true), // Get server URL with HTTPS
+    getServerUrl(false) // Get server URL with HTTP for fallback
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -182,17 +332,31 @@ app.use((err, req, res, next) => {
 });
 
 // ✅ START SERVER
-server.listen(PORT, HOST, () => {
-  const protocol = HTTPS && HTTPS.enabled ? 'https' : 'http';
-  logger.logServerEvent('Backend Server Started Successfully', {
-    protocol: protocol,
-    host: HOST,
-    port: PORT,
-    pid: process.pid,
-    nodeVersion: process.version,
-    memoryUsage: process.memoryUsage(),
-    logFile: logger.currentLogFile
+async function startServer() {
+  // Check port availability first
+  await checkPortBeforeStart();
+  
+  server.listen(PORT, HOST, () => {
+    const protocol = HTTPS && HTTPS.enabled ? 'https' : 'http';
+    logger.logServerEvent('Backend Server Started Successfully', {
+      protocol: protocol,
+      host: HOST,
+      port: PORT,
+      pid: process.pid,
+      nodeVersion: process.version,
+      memoryUsage: process.memoryUsage(),
+      logFile: logger.currentLogFile
+    });
   });
+}
+
+// Start the server
+startServer().catch((error) => {
+  logger.fatal('Failed to start server', {
+    error: error.message,
+    stack: error.stack
+  });
+  process.exit(1);
 });
 
 // Health check endpoint for monitoring

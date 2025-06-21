@@ -31,9 +31,9 @@ const token = authHeader && authHeader.split(' ')[1];
 
 //
 // 🔐 REGISTER NEW USER
-// Creates a new user with username, password, and preferred language.
+// Creates a new user with username, password, display name, and preferred language.
 router.post('/register', async (req, res) => {
-  const { username, password, language } = req.body;
+  const { username, password, display_name, language } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
@@ -51,16 +51,17 @@ router.post('/register', async (req, res) => {
 
     // Insert new user
     const stmt = db.prepare(`
-      INSERT INTO users (username, password_hash, language, created_at)
-      VALUES (?, ?, ?, datetime('now'))
+      INSERT INTO users (username, password_hash, display_name, language, created_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
     `);
 
-    const result = stmt.run(username, hashedPassword, language || 'en');
+    const result = stmt.run(username, hashedPassword, display_name || null, language || 'en');
 
     // Create token
     const user = {
       id: result.lastInsertRowid,
       username,
+      display_name: display_name || null,
       preferred_language: language || 'en'
     };
 

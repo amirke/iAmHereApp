@@ -1,27 +1,63 @@
 {
-  "name": "IamHereApp",
+  "name": "IamHereApp - Location Sharing",
   "short_name": "IamHere",
-  "start_url": "/",
+  "description": "Share your location with friends and family in real-time",
+  "version": "1.0.2",
+  "version_name": "v1.0.2 (3)",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#4CAF50",
   "orientation": "portrait",
   "scope": "/",
-  "description": "Location sharing app for friends and family",
-  "categories": ["social", "utilities"],
+  "categories": [
+    "social",
+    "utilities",
+    "navigation"
+  ],
   "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "IamHere App Home Screen - Mobile"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "IamHere App Home Screen - Desktop"
     }
   ]
 }

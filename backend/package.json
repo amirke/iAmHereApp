@@ -1,6 +1,6 @@
 {
   "name": "arrived-app-backend",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "dependencies": {
     "bcrypt": "^6.0.0",

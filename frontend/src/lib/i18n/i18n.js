@@ -1,8 +1,9 @@
-import { register, init, getLocaleFromNavigator, locale } from 'svelte-i18n';
+import { register, init, getLocaleFromNavigator, locale, waitLocale } from 'svelte-i18n';
 import { get } from 'svelte/store';
 import { BACKEND_URL } from '$lib/config';
 import { userToken } from '$lib/stores';
 
+// Pre-register locales synchronously to avoid delays
 register('en', () => import('./en.json'));
 register('he', () => import('./he.json'));
 
@@ -57,8 +58,13 @@ export async function switchLanguage(newLocale) {
   }
 }
 
-// Default init
+// Initialize with immediate locale loading
+const initLocale = getLocaleFromNavigator() || 'en';
+
 init({
   fallbackLocale: 'en',
-  initialLocale: getLocaleFromNavigator()
+  initialLocale: initLocale
 });
+
+// Pre-load the initial locale
+waitLocale(initLocale);

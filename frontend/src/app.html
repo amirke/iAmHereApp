@@ -2,20 +2,240 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- 🎯 STEP 1: Browser parses HTML head section -->
 
     <!-- Favicon -->
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/favicon.png" />
+    <link rel="icon" type="image/x-icon" href="%sveltekit.assets%/favicon.png" />
+    <link rel="shortcut icon" href="%sveltekit.assets%/favicon.png" />
 
     <!-- Mobile/PWA Capabilities -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#4CAF50" />
+    <meta name="msapplication-TileColor" content="#4CAF50" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="version" content="1.0.2">
+    <meta name="description" content="Share your location with friends and family in real-time" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png" />
 
+    <!-- Apple PWA Meta -->
+    <meta name="apple-mobile-web-app-title" content="IamHere" />
+    <link rel="mask-icon" href="/icon-512x512.png" color="#4CAF50" />
+
+    <!-- 🎯 STEP 2: SvelteKit injects page-specific head content here -->
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
+    <!-- 🎯 STEP 3: SvelteKit injects your app content here -->
     <div style="display: contents">%sveltekit.body%</div>
+    
+
+
+
+    <!-- Network Error Detection - Log 404s and module loading failures -->
+    <script>
+      console.warn('app html start');
+
+      // Track failed module loads and 404s
+      window.moduleLoadErrors = [];
+      window.networkErrors = [];
+      
+      // Capture all network errors
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          const error = {
+            type: 'RESOURCE_LOAD_ERROR',
+            url: e.target.src || e.target.href,
+            tagName: e.target.tagName,
+            timestamp: new Date().toISOString()
+          };
+          
+          window.networkErrors.push(error);
+          console.error('🚨 Resource Load Error:', error);
+          
+          // Check if it's a critical app module
+          if (error.url.includes('/_app/immutable/entry/')) {
+            // Amir 7
+            console.error('💥 CRITICAL: App entry module failed to load!', error.url);
+            console.error('🔧 Try: Ctrl+Shift+C to clear cache, or emergencyClearCache() in console');
+         
+          }
+        }
+      }, true);
+      
+      // Capture unhandled promise rejections (module import failures)
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && e.reason.message.includes('Failed to fetch dynamically imported module')) {
+          const error = {
+            type: 'MODULE_IMPORT_ERROR',
+            message: e.reason.message,
+            stack: e.reason.stack,
+            timestamp: new Date().toISOString()
+          };
+          
+          window.moduleLoadErrors.push(error);
+          console.error('🚨 Module Import Error:', error);
+          
+          // Extract the failed module URL
+          const urlMatch = e.reason.message.match(/https?:\/\/[^\s]+/);
+          if (urlMatch) {
+            console.error('💥 FAILED MODULE:', urlMatch[0]);
+            console.error('🔧 Try: Ctrl+Shift+C to clear cache, or emergencyClearCache() in console');
+          }
+        }
+      });
+      
+      // Global function to check network status
+      // Amir 9
+      window.checkNetworkErrors = function() {
+        console.log('🔍 Network Error Summary:');
+        console.log('Resource Load Errors:', window.networkErrors);
+        console.log('Module Import Errors:', window.moduleLoadErrors);
+        
+        if (window.networkErrors.length > 0 || window.moduleLoadErrors.length > 0) {
+          console.warn('⚠️ Network errors detected! Consider clearing cache with Ctrl+Shift+C');
+          
+          // Show specific build mismatch info
+          const failed404s = window.networkErrors.filter(e => e.url.includes('/_app/immutable/'));
+          if (failed404s.length > 0) {
+            console.error('🔧 BUILD MISMATCH DETECTED:');
+            console.error('HTML is referencing files that don\'t exist in current build');
+            console.error('Failed files:', failed404s.map(e => e.url.split('/').pop()));
+            console.error('💡 Solution: Clear cache (Ctrl+Shift+C) or rebuild frontend');
+            console.error('🔧 Zerhavit 🔧 Zerhavit 🔧 Zerhavit 🔧 Zerhavit 🔧 Zerhavit 🔧 Zerhavit ');
+            emergencyClearCache();
+            console.error('🔧 Amir 🔧 Amir 🔧 Amir 🔧 Amir 🔧 Amir 🔧 Amir 🔧 Amir 🔧 Amir 🔧 Amir ');
+          }
+        } else {
+          console.log('✅ No network errors detected');
+        }
+      };
+      
+      // Auto-check for errors after page load
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          if (window.networkErrors.length > 0 || window.moduleLoadErrors.length > 0) {
+            // Amir 9
+            console.warn('🚨 AUTO-DETECTED: Network errors found after page load');
+            window.checkNetworkErrors();
+          }
+        }, 2000); // Wait 2 seconds for all modules to attempt loading
+      });
+    </script>
+
+
+
+
+
+
+
+
+    <!-- Emergency Cache Clearing - Available even when main app fails -->
+    <script>
+      console.warn('app html emergencyClearCache');
+      // Global emergency cache clearing function
+      window.emergencyClearCache = async function() {
+        console.log('🚨 Emergency cache clear initiated');
+        
+        try {
+          // 1. Clear Service Worker caches via message
+          if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            if (registration.active) {
+              const messageChannel = new MessageChannel();
+              
+              // Send clear message to service worker
+              registration.active.postMessage(
+                { type: 'CLEAR_ALL_CACHES' },
+                [messageChannel.port2]
+              );
+              
+              // Wait for response
+              await new Promise((resolve) => {
+                messageChannel.port1.onmessage = (event) => {
+                  console.log('Service worker response:', event.data);
+                  resolve();
+                };
+              });
+            }
+          }
+          
+          // 2. Clear all browser caches directly
+          if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            console.log(`Clearing ${cacheNames.length} caches...`);
+            
+            for (const cacheName of cacheNames) {
+              await caches.delete(cacheName);
+              console.log(`✅ Deleted cache: ${cacheName}`);
+            }
+          }
+          
+          // 3. Clear localStorage and sessionStorage
+          localStorage.clear();
+          sessionStorage.clear();
+          console.log('✅ Storage cleared');
+          
+          // 4. Unregister all service workers
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+              await registration.unregister();
+              console.log('✅ Service worker unregistered');
+            }
+          }
+          
+          console.log('🎉 Emergency cache clear complete! Reloading...');
+          
+          // 5. Force reload from server
+          setTimeout(() => {
+            window.location.reload(true);
+          }, 1000);
+          
+        } catch (error) {
+          console.error('❌ Emergency cache clear failed:', error);
+          // Still try to reload
+          window.location.reload(true);
+        }
+      };
+      
+      // Keyboard shortcut: Ctrl+Shift+C to clear cache
+      document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+          e.preventDefault();
+          console.log('🔥 Emergency cache clear triggered by keyboard shortcut');
+          window.emergencyClearCache();
+        }
+      });
+    </script>
+
+    <!-- Service Worker registration -->
+    <script>
+      console.warn('app html serviceWorker');
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', {
+            scope: '/'
+          }).then(function(registration) {
+            // Amir 8
+            console.log('ServiceWorker registration successful');
+            registration.update();
+          }).catch(function(err) {
+            console.error('ServiceWorker registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

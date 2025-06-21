@@ -1,0 +1,68 @@
+{
+  "name": "iamhereapp",
+  "version": "1.0.2",
+  "description": "Real-time location sharing PWA with GPS/AGPS positioning, bilingual support, and comprehensive security",
+  "keywords": [
+    "pwa",
+    "location-sharing",
+    "gps",
+    "agps",
+    "svelte",
+    "express",
+    "real-time",
+    "bilingual",
+    "maps"
+  ],
+  "author": "IamHereApp Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amirke/iAmHereApp.git"
+  },
+  "homepage": "https://amirnas.dynamic-dns.net:4173",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "version:show": "node update-version.js --show",
+    "version:patch": "node update-version.js --patch",
+    "version:minor": "node update-version.js --minor",
+    "version:major": "node update-version.js --major",
+    "version:set": "node update-version.js --version",
+    "version:help": "node update-version.js --help",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run preview",
+    "test": "cd backend && npm test",
+    "lint": "cd frontend && npm run check",
+    "clean": "rimraf frontend/build backend/dist node_modules frontend/node_modules backend/node_modules",
+    "release:patch": "npm run version:patch && npm run build",
+    "release:minor": "npm run version:minor && npm run build",
+    "release:major": "npm run version:major && npm run build",
+    "deploy": "npm run build && echo 'Deploy to production server'",
+    "health": "curl -f https://amirnas.dynamic-dns.net:3001/health || echo 'Backend health check failed'"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "rimraf": "^5.0.5"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "config": {
+    "domain": "amirnas.dynamic-dns.net",
+    "ports": {
+      "frontend": 4173,
+      "backend": 3001,
+      "ssh": 2211
+    },
+    "ssl": {
+      "enabled": true,
+      "path": "/volume2/video/Projects/SSL/"
+    }
+  }
+}

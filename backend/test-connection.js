@@ -1,5 +1,20 @@
 #!/usr/bin/env node
+// what thi s file do?
+// it tests the connection to the backend server
+// it tests the health endpoint
+// it tests the register endpoint
+// it tests the login endpoint
+// it tests the logout endpoint
+// it tests the get user endpoint
+// it tests the update user endpoint
 
+// how to use it?
+// 1. run the command: node test-connection.js
+// 2. it will test the connection to the backend server
+// 3. it will test the health endpoint
+// 4. it will test the register endpoint
+// 5. it will test the login endpoint
+// 6. it will test the logout endpoint
 const http = require('http');
 const https = require('https');
 const config = require('./config');
@@ -87,6 +102,7 @@ function testRegisterEndpoint() {
   const postData = JSON.stringify({
     username: 'testuser',
     password: 'testpass',
+    display_name: 'Test User',
     language: 'en'
   });
   

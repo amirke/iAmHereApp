@@ -7,6 +7,7 @@
   "Register": "צור חשבון",
   "Username": "שם משתמש",
   "Password": "סיסמה",
+  "Display Name": "שם לתצוגה",
   "Language": "שפה",
   "Submit": "שלח",
   "Create Account": "צור חשבון",
@@ -14,6 +15,21 @@
   "Switch to Create Account": "מעבר ליצירת חשבון",
   "Home": "בית",
   "My Profile": "הפרופיל שלי",
-  "Logout": "התנתק"
-
+  "Logout": "התנתק",
+  "Profile updated": "הפרופיל עודכן בהצלחה",
+  "User Information": "מידע משתמש",
+  "Nickname": "כינוי",
+  "Not set": "לא הוגדר",
+  "Member since": "חבר מאז",
+  "Profile Settings": "הגדרות פרופיל",
+  "Enter your display name": "הזן את שם התצוגה שלך",
+  "Save Profile": "שמור פרופיל",
+  "Change Password": "שנה סיסמה",
+  "Current Password": "סיסמה נוכחית",
+  "New Password": "סיסמה חדשה",
+  "Confirm Password": "אשר סיסמה",
+  "Password changed successfully": "הסיסמה שונתה בהצלחה",
+  "Log out": "התנתק",
+  "Back": "חזור",
+  "Map & Location Services": "מפה ושירותי מיקום"
 }

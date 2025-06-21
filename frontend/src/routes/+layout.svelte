@@ -4,90 +4,135 @@
   // Full Path: src/routes/+layout.svelte
 
   import '$lib/i18n/i18n.js';
-  import { locale, t } from 'svelte-i18n';
+  import { locale, t, isLoading } from 'svelte-i18n';
   import { loadUserLocale } from '$lib/i18n/i18n';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { userToken } from '$lib/stores';
   import { goto } from '$app/navigation';
   import { get } from 'svelte/store';
+  import Navigation from '$lib/components/Navigation.svelte';
 
-  let translatedHome = '';
-  let translatedProfile = '';
-  let translatedLogout = '';
-  let showNav = false; // 👈 שליטה על תצוגת התפריט
+  let showNav = false;
 
-  function logout() {
-    userToken.set('');
-    localStorage.removeItem('token');
-    goto('/login');
+
+
+  // Register service worker for PWA
+  async function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      try {
+        // Debug: Check existing registrations
+        const existingRegs = await navigator.serviceWorker.getRegistrations();
+        
+        // Try to register the service worker
+        const registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
+        });
+        
+        // Check if the service worker is controlling the page
+        if (navigator.serviceWorker.controller) {
+          console.log('✅ PWA: Service Worker is controlling the page');
+        } else {
+          console.log('⚠️ PWA: Service Worker is not controlling the page yet');
+        }
+        
+        // Listen for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('New service worker installed');
+            }
+          });
+        });
+
+        // Debug: Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          // Store the event for later use
+          window.deferredPrompt = e;
+        });
+
+        // Force update check for Chrome Mobile
+        registration.update();
+
+      } catch (error) {
+        console.error('❌ PWA: Service Worker registration failed:', error);
+      }
+    }
   }
 
   if (browser) {
     onMount(async () => {
+      // Register service worker first
+      await registerServiceWorker();
+
+      // Debug logging with proper browser context
+      if (browser) {
+        console.warn('🚀 Layout onMount started');
+        console.log('Initial flags:', {
+          isLoading: $isLoading,
+          showNav: showNav,
+          userToken: !!$userToken
+        });
+      }
+      
+      // Check authentication
       const token = get(userToken);
       if (!token) {
-        console.log('[Layout] No token. Redirecting to /login');
         goto('/login');
         return;
       }
 
-      showNav = true; // ✅ מציג תפריט רק אחרי אימות טוקן
+      // Set initial navigation visibility
+      showNav = !!(token && token.trim() !== '');
 
-      console.log('[Layout] Logged in. Loading user locale...');
+      // Load user locale and set direction
       await loadUserLocale();
 
       const currentLocale = get(locale);
       const direction = currentLocale === 'he' ? 'rtl' : 'ltr';
       document.documentElement.setAttribute('dir', direction);
 
-      const unsubscribe = locale.subscribe((currentLocale) => {
+      // Subscribe to locale changes for RTL/LTR switching
+      const unsubscribeLocale = locale.subscribe((currentLocale) => {
         const dir = currentLocale === 'he' ? 'rtl' : 'ltr';
         document.documentElement.setAttribute('dir', dir);
-        console.log('[Layout] Locale changed →', currentLocale, '→ dir:', dir);
+        if (browser) {
+          console.log('🌐 Locale changed:', currentLocale, 'Direction:', dir);
+        }
       });
 
-      const unsubT = t.subscribe(($t) => {
-        translatedHome = $t('Home');
-        translatedProfile = $t('My Profile');
-        translatedLogout = $t('Logout');
-        console.log('[Layout] Translations updated');
+      // Subscribe to token changes for navigation visibility
+      const unsubscribeToken = userToken.subscribe((token) => {
+        showNav = !!(token && token.trim() !== '');
+        if (browser) {
+          console.log('🔐 Token changed, showNav:', showNav);
+        }
+      });
+
+      // Subscribe to translation loading state
+      const unsubscribeLoading = isLoading.subscribe((loading) => {
+        if (browser) {
+          console.log('📚 Translation loading state:', loading);
+        }
       });
 
       return () => {
-        unsubscribe();
-        unsubT();
+        unsubscribeLocale();
+        unsubscribeToken();
       };
     });
   }
 </script>
 
 <style>
-  nav {
-    padding: 1rem;
-    background-color: #f8f9fa;
-    margin-bottom: 1rem;
-  }
-
-  nav a {
-    margin: 0 0.5rem;
-    text-decoration: none;
-    color: #333;
-  }
-
-  nav button {
-    margin-left: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    cursor: pointer;
-  }
+  /* Layout styles */
 </style>
 
-{#if browser && showNav}
-  <nav>
-    <a href="/">{translatedHome}</a> |
-    <a href="/profile">{translatedProfile}</a> |
-    <button on:click={logout}>{translatedLogout}</button>
-  </nav>
-{/if}
+<!--{#if showNav}
+  <Navigation />
+{/if}-->
+ <Navigation />
 
 <slot />

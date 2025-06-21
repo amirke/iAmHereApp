@@ -1,17 +1,21 @@
-// Backend server base URL (changeable per environment)
-// For HTTPS backend, change to: 'https://192.168.1.17:3001'
-// For global access, change to: 'https://amirnas.dynamic-dns.net:3001'
-export const BACKEND_URL = 'https://192.168.1.17:3001';
+// Import constants - these should match backend constants
+const SERVER_PORT = 3001;
+const DOMAIN_NAME = 'amirnas.dynamic-dns.net';
+const LOCAL_IP = '192.168.1.17';
+
+// Backend server base URL (dynamically constructed)
+export const BACKEND_URL = `https://${DOMAIN_NAME}:${SERVER_PORT}`;
 
 // Global access configuration
 export const GLOBAL_CONFIG = {
   enabled: true, // Set to true for global access
-  domain: 'amirnas.dynamic-dns.net',
-  port: 3001
+  domain: DOMAIN_NAME,
+  port: SERVER_PORT,
+  localIp: LOCAL_IP
 };
 
 // Version for cache busting
-export const APP_VERSION = '1.0.1';
+export const APP_VERSION = '1.0.0';
 
 // Network error handling
 export const NETWORK_CONFIG = {
@@ -30,7 +34,10 @@ export const DEFAULT_HEADERS = {
 };
 
 // Helper function to get backend URL based on environment
-export function getBackendUrl() {
+export function getBackendUrl(useLocal = false) {
+  if (useLocal) {
+    return `https://${GLOBAL_CONFIG.localIp}:${GLOBAL_CONFIG.port}`;
+  }
   if (GLOBAL_CONFIG.enabled) {
     return `https://${GLOBAL_CONFIG.domain}:${GLOBAL_CONFIG.port}`;
   }

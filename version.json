@@ -1,0 +1,42 @@
+{
+  "version": "1.0.2",
+  "buildNumber": 3,
+  "releaseDate": "2025-06-21",
+  "codeName": "Genesis",
+  "description": "Added comprehensive version management system",
+  "changes": [
+    "✅ User authentication and profile management",
+    "✅ GPS/AGPS location services with best result selection",
+    "✅ Bilingual interface (English/Hebrew) with RTL support",
+    "✅ Custom map generation with dual language support",
+    "✅ PWA installation for iPhone and Android",
+    "✅ Real-time WebSocket communication",
+    "✅ Comprehensive security implementation",
+    "✅ Database expansion with 13 new user fields"
+  ],
+  "compatibility": {
+    "frontend": {
+      "node": ">=18.0.0",
+      "browsers": [
+        "Chrome 90+",
+        "Firefox 88+",
+        "Safari 14+",
+        "Edge 90+"
+      ]
+    },
+    "backend": {
+      "node": ">=18.0.0",
+      "sqlite": ">=3.35.0"
+    }
+  },
+  "deployment": {
+    "environment": "production",
+    "ssl_expires": "2025-09-17",
+    "domain": "amirnas.dynamic-dns.net",
+    "ports": {
+      "frontend": 4173,
+      "backend": 3001,
+      "ssh": 2211
+    }
+  }
+}
